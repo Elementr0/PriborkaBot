@@ -2,6 +2,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
+from FSMContexts.addLecture import AddLecture
 from inlineKeyboars.inline_Keyboard.admin.adm_finish_uploadPhoto_menu import adm_finish_uploadPhoto_menu
 
 router = Router()
@@ -11,4 +12,5 @@ async def admin_add_Lectures(callback:CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.delete()
     await callback.message.answer("Отправь фото лекции (можно несколько подряд). Когда закончишь — нажми ✅ Завершить загрузку", reply_markup=adm_finish_uploadPhoto_menu)
+    await state.set_state(AddLecture.waiting_for_photos)
     await callback.answer()
