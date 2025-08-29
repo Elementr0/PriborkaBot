@@ -16,7 +16,6 @@ class AddAdminFSM(StatesGroup):
 
 @router.message(Command("addadmin"))
 async def add_admin_command(message: Message, state: FSMContext):
-    print(SUPER_ADMIN_ID, ADMIN)
     if str(message.from_user.id) != SUPER_ADMIN_ID:
         await message.answer("Нет доступа.")
         return
