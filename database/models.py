@@ -44,3 +44,10 @@ class Schedule(Base):
     subject : Mapped[str] = mapped_column()
     classroom : Mapped[str] = mapped_column()
     teacher : Mapped[str] = mapped_column()
+
+class Subgroup(Base):
+    __tablename__ = "subgroup"
+
+    id : Mapped[int] = mapped_column(primary_key=True, index=True)
+    tgId : Mapped[int] = mapped_column()
+    subgroup : Mapped[int] = mapped_column()

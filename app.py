@@ -8,16 +8,16 @@ import handlers
 from callbacks.admin import (
     finish_photos, admin_subject, admin_date, add_new_subject, add_subject_in_lecture,
     start_add_subject, add_subject_handler, start_delete_subject, delete_subject_handler,
-    admin_add_Lectures, admin_photos
+    admin_add_Lectures, admin_photos, handle_monday_schedule
 )
-from callbacks import choose_subject, choose_date
+from callbacks import choose_subject, choose_date, handle_second_subgroup, handle_first_subgroup
 from config import BOT_TOKEN
 
 from aiogram import Bot, Dispatcher
 
 from database.crud import create_tables, add_subject, get_teacher, set_teacher, fill_schedule, get_day, get_day_full
 from handlers.commands import cmd_start
-from handlers.text import txt_Lectures, txt_Teachers
+from handlers.text import txt_Lectures, txt_Teachers, txt_schedule
 from handlers.commands import cmd_add_admin
 
 async def main():
@@ -42,6 +42,9 @@ async def main():
     dp.include_router(add_subject_handler.router)
     dp.include_router(start_delete_subject.router)
     dp.include_router(delete_subject_handler.router)
+    dp.include_router(handle_monday_schedule.router)
+    dp.include_router(handle_first_subgroup.router)
+    dp.include_router(handle_second_subgroup.router)
 
     # Команды
     dp.include_router(cmd_start.router)
@@ -49,6 +52,7 @@ async def main():
     # Текст
     dp.include_router(txt_Lectures.router)
     dp.include_router(txt_Teachers.router)
+    dp.include_router(txt_schedule.router)
 
 
     data_up_week = [

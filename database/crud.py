@@ -1,11 +1,11 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import engine, Base, async_session
-from database.models import tgUsers, Subject, Lecture, Admin, Teacher, Schedule
+from database.models import tgUsers, Subject, Lecture, Admin, Teacher, Schedule, Subgroup
 
 from sqlalchemy import select
 from typing import List, Dict
@@ -103,28 +103,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Dict
 
+
 async def get_day(week: str, day: str, subgroup: int) -> List[Dict]:
-    """
-    Возвращает расписание для указанной недели, дня и подгруппы
-    """
     async with async_session() as session:
-        # Создаем запрос
-        stmt = select(Schedule.subject, Schedule.hour).where(
+        from sqlalchemy import select
+
+        # Запрашиваем ВСЕ поля которые есть в модели
+        stmt = select(
+            Schedule.subject,
+            Schedule.hour,
+            Schedule.classroom,  # Добавляем classroom
+            Schedule.teacher  # Добавляем teacher
+        ).where(
             Schedule.week == week,
             Schedule.day == day,
             Schedule.subgroup == subgroup
-        )
+        ).order_by(Schedule.hour)
 
-        # Выполняем запрос
         result = await session.execute(stmt)
-
-        # Получаем все результаты
         records = result.all()
 
-        # Возвращаем список словарей с subject и hour
         return [
-            {"subject": subject, "hour": hour}
-            for subject, hour in records
+            {
+                "subject": subject,
+                "hour": hour,
+                "classroom": classroom or "Не указано",  # Защита от None
+                "teacher": teacher or "Не указан"  # Защита от None
+            }
+            for subject, hour, classroom, teacher in records
         ]
 
 
@@ -132,7 +138,7 @@ async def get_day_full(week: str, day: str, subgroup: int) -> List[Dict]:
     """
     Возвращает полное расписание со всеми полями
     """
-    async with AsyncSession(engine) as session:
+    async with async_session() as session:
         stmt = select(Schedule).where(
             Schedule.week == week,
             Schedule.day == day,
@@ -156,9 +162,92 @@ async def get_day_full(week: str, day: str, subgroup: int) -> List[Dict]:
         ]
 
 
+async def check_tgid_exists(tgId: int) -> bool:
+    """
+    Проверяет, существует ли пользователь с указанным tgId в базе данных
+
+    Args:
+        tgId: ID пользователя в Telegram
+
+    Returns:
+        bool: True если пользователь существует, False если нет
+    """
+    async with async_session() as session:
+        try:
+            # Создаем запрос
+            stmt = select(Subgroup).where(Subgroup.tgId == tgId)
+
+            # Выполняем запрос
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+
+            # Возвращаем True если пользователь найден, False если нет
+            return user is not None
+
+        except Exception as e:
+            print(f"Ошибка при проверке пользователя: {e}")
+            return False
+
+async def get_subgroup(tgId: int) -> Optional[int]:
+    """
+    Возвращает подгруппу пользователя по его tgId
+
+    Args:
+        tgId: ID пользователя в Telegram
+
+    Returns:
+        int: номер подгруппы или None если не найден
+    """
+    async with async_session() as session:
+        try:
+            # Создаем запрос
+            stmt = select(Subgroup.subgroup).where(Subgroup.tgId == tgId)
+
+            # Выполняем запрос
+            result = await session.execute(stmt)
+            subgroup = result.scalar_one_or_none()
+
+            return subgroup
+
+        except Exception as e:
+            print(f"Ошибка при получении подгруппы: {e}")
+            return None
 
 
+async def set_subgroup(tgId: int, subgroup: int) -> bool:
+    """
+    Устанавливает или изменяет подгруппу пользователя
 
+    Args:
+        tgId: ID пользователя в Telegram
+        subgroup: Номер подгруппы (1 или 2)
+
+    Returns:
+        bool: True если успешно, False если ошибка
+    """
+    async with async_session() as session:
+        try:
+            # Проверяем существование пользователя
+            stmt = select(Subgroup).where(Subgroup.tgId == tgId)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+
+            if user:
+                # Обновляем существующую запись
+                user.subgroup = subgroup
+                await session.commit()
+                return True
+            else:
+                # Создаем новую запись
+                new_user = Subgroup(tgId=tgId, subgroup=subgroup)
+                session.add(new_user)
+                await session.commit()
+                return True
+
+        except Exception as e:
+            print(f"❌ Ошибка установки подгруппы: {e}")
+            await session.rollback()
+            return False
 
 async def fill_schedule(data: List[Dict]):
     """
