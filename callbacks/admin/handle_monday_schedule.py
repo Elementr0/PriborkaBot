@@ -1,6 +1,5 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
-
 from database.crud import get_day, get_subgroup
 from inlineKeyboars.inline_Keyboard.schedule import schedule_menu
 
@@ -9,10 +8,8 @@ router = Router()
 
 @router.callback_query(F.data == "schedule_monday")
 async def handle_monday_schedule(callback: CallbackQuery):
-
     try:
         subgroup = await get_subgroup(callback.from_user.id)
-
         schedule = await get_day("up", "Понедельник", subgroup)
 
         response_text = "📅 <b>Расписание на понедельник:</b>\n\n"
@@ -20,7 +17,20 @@ async def handle_monday_schedule(callback: CallbackQuery):
         if not schedule:
             response_text += "❌ Занятий не найдено"
         else:
-            for i, lesson in enumerate(schedule, 1):
+            # Функция для преобразования времени в минуты для сортировки
+            def time_to_minutes(time_str):
+                try:
+                    # Берем начало временного интервала (8:00 из "8:00-9:35")
+                    start_time = time_str.split('-')[0].strip()
+                    hours, minutes = map(int, start_time.split(':'))
+                    return hours * 60 + minutes
+                except (IndexError, ValueError):
+                    return 0  # Если формат неправильный, ставим в начало
+
+            # Сортируем расписание по начальному времени
+            sorted_schedule = sorted(schedule, key=lambda x: time_to_minutes(x.get('hour', '')))
+
+            for i, lesson in enumerate(sorted_schedule, 1):
                 hour = lesson.get('hour', '⏰ Время не указано')
                 subject = lesson.get('subject', '📖 Предмет не указан')
                 classroom = lesson.get('classroom', '🏫 Аудитория не указана')
@@ -34,7 +44,7 @@ async def handle_monday_schedule(callback: CallbackQuery):
                 )
 
                 # Добавляем разделитель между предметами, кроме последнего
-                if i < len(schedule):
+                if i < len(sorted_schedule):
                     response_text += "\n" + "─" * 30 + "\n\n"
 
         await callback.message.edit_text(
