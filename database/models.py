@@ -25,3 +25,22 @@ class Lecture(Base):
 class Admin(Base):
     __tablename__ = "admins"
     user_id: Mapped[str] = mapped_column(primary_key=True)
+
+class Teacher(Base):
+    __tablename__ = "teachers"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    teacher : Mapped[str] = mapped_column()
+    mood: Mapped[str] = mapped_column()
+    subject: Mapped[str] = mapped_column()
+
+class Schedule(Base):
+    __tablename__ = "schedule"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    week : Mapped[str] = mapped_column()
+    day : Mapped[str] = mapped_column()
+    hour : Mapped[str] = mapped_column()
+    subgroup : Mapped[int] = mapped_column()
+    subject : Mapped[str] = mapped_column()
+    classroom : Mapped[str] = mapped_column()
+    teacher : Mapped[str] = mapped_column()

@@ -9,7 +9,7 @@ from database.crud import is_admin
 router = Router()
 
 
-@router.message(F.text == "Лекции")
+@router.message(F.text == "📚 Лекции")
 async def txt_Lectures(message: Message):
 
     if  await is_admin(str(message.from_user.id)):
