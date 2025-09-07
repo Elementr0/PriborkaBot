@@ -1,16 +1,24 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import CallbackQuery
 from database.crud import get_day, get_subgroup
 from inlineKeyboars.inline_Keyboard.schedule import schedule_menu
+
+import datetime
+
 
 router = Router()
 
 
 @router.callback_query(F.data == "schedule_monday")
-async def handle_monday_schedule(callback: CallbackQuery):
+async def handle_tuesday_schedule(callback: CallbackQuery):
     try:
+        date = datetime.date.today().isocalendar()[1] #Узнаём номер недели
+        if (date % 2) == 0: #чётная неделя вернхяя нечетная нижняя
+            week = "up"
+        else:
+            week = "down"
         subgroup = await get_subgroup(callback.from_user.id)
-        schedule = await get_day("up", "Понедельник", subgroup)
+        schedule = await get_day(week, "Понедельник", subgroup)
 
         response_text = "📅 <b>Расписание на понедельник:</b>\n\n"
 
